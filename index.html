@@ -85,111 +85,102 @@ select {
 </div>
 
 <script>
+<script>
 
-// BUS DATA
-const buses = [
-  {
-    number: "21G",
-    stops: ["Central Station", "Park", "Marina Beach"],
-    fare: "₹15",
-    timing: "Every 10 mins",
-    next: "5 mins",
-    map: "https://www.google.com/maps/dir/?api=1&origin=Central+Station&destination=Marina+Beach&travelmode=transit"
-  },
-  {
-    number: "47A",
-    stops: ["T Nagar", "Museum", "Marina Beach"],
-    fare: "₹20",
-    timing: "Every 15 mins",
-    next: "8 mins",
-    map: "https://www.google.com/maps/dir/?api=1&origin=T+Nagar&destination=Marina+Beach&travelmode=transit"
-  },
-  {
-    number: "5E",
-    stops: ["Tambaram", "Guindy", "T Nagar"],
-    fare: "₹18",
-    timing: "Every 20 mins",
-    next: "12 mins",
-    map: "https://www.google.com/maps/dir/?api=1&origin=Tambaram&destination=T+Nagar&travelmode=transit"
-  }
-];
+document.addEventListener("DOMContentLoaded", function () {
 
-// SEARCH FUNCTION (SAFE)
-function searchBus() {
-  var input = document.getElementById("search").value.toLowerCase();
-  var result = "";
-  var shown = {};
-
-  for (var i = 0; i < buses.length; i++) {
-    var bus = buses[i];
-
-    var match = false;
-
-    if (bus.number.toLowerCase().includes(input)) {
-      match = true;
+  const buses = [
+    {
+      number: "21G",
+      stops: ["Central Station", "Park", "Marina Beach"],
+      fare: "₹15",
+      timing: "Every 10 mins",
+      next: "5 mins",
+      map: "https://www.google.com/maps/dir/?api=1&origin=Central+Station&destination=Marina+Beach&travelmode=transit"
+    },
+    {
+      number: "47A",
+      stops: ["T Nagar", "Museum", "Marina Beach"],
+      fare: "₹20",
+      timing: "Every 15 mins",
+      next: "8 mins",
+      map: "https://www.google.com/maps/dir/?api=1&origin=T+Nagar&destination=Marina+Beach&travelmode=transit"
+    },
+    {
+      number: "5E",
+      stops: ["Tambaram", "Guindy", "T Nagar"],
+      fare: "₹18",
+      timing: "Every 20 mins",
+      next: "12 mins",
+      map: "https://www.google.com/maps/dir/?api=1&origin=Tambaram&destination=T+Nagar&travelmode=transit"
     }
+  ];
 
-    for (var j = 0; j < bus.stops.length; j++) {
-      if (bus.stops[j].toLowerCase().includes(input)) {
-        match = true;
+  window.searchBus = function () {
+    const input = document.getElementById("search").value.toLowerCase();
+    let result = "";
+    let shown = {};
+
+    buses.forEach(bus => {
+      let match = bus.number.toLowerCase().includes(input) ||
+        bus.stops.some(stop => stop.toLowerCase().includes(input));
+
+      if (match && !shown[bus.number]) {
+        shown[bus.number] = true;
+
+        result += "<div class='card'>" +
+          "<h3>🚌 Bus " + bus.number + "</h3>" +
+          "<p>Route: " + bus.stops.join(" → ") + "</p>" +
+          "<p>Fare: " + bus.fare + "</p>" +
+          "<p>⏰ Next Bus: " + bus.next + "</p>" +
+          "<p>📅 Frequency: " + bus.timing + "</p>" +
+          "<button onclick=\"openMap('" + bus.map + "')\">View Route Map 🗺️</button>" +
+        "</div>";
       }
+    });
+
+    document.getElementById("result").innerHTML =
+      result || "<p>No buses found 😢</p>";
+  };
+
+  window.openMap = function (link) {
+    window.open(link, "_blank");
+  };
+
+  window.handleKey = function (event) {
+    if (event.key === "Enter") {
+      searchBus();
     }
+  };
 
-    if (match && !shown[bus.number]) {
-      shown[bus.number] = true;
-
-      result += "<div class='card'>" +
-        "<h3>🚌 Bus " + bus.number + "</h3>" +
-        "<p>Route: " + bus.stops.join(" → ") + "</p>" +
-        "<p>Fare: " + bus.fare + "</p>" +
-        "<p>⏰ Next Bus: " + bus.next + "</p>" +
-        "<p>📅 Frequency: " + bus.timing + "</p>" +
-        "<button onclick=\"openMap('" + bus.map + "')\">View Route Map 🗺️</button>" +
-      "</div>";
+  window.changeLanguage = function (lang) {
+    if (lang === "ta") {
+      document.getElementById("title").innerText = "🚌 ஸ்மார்ட் பஸ் அமைப்பு";
+      document.getElementById("searchText").innerText = "நீங்கள் செல்ல விரும்பும் இடத்தை தேடுங்கள்";
+      document.getElementById("qrText").innerText = "பஸ் QR ஸ்கேன் செய்யவும்";
+    } else if (lang === "hi") {
+      document.getElementById("title").innerText = "🚌 स्मार्ट बस सिस्टम";
+      document.getElementById("searchText").innerText = "अपना गंतव्य खोजें";
+      document.getElementById("qrText").innerText = "बस QR स्कैन करें";
+    } else {
+      document.getElementById("title").innerText = "🚌 Smart Bus Finder";
+      document.getElementById("searchText").innerText = "Search your destination";
+      document.getElementById("qrText").innerText = "Scan QR on Bus to view details";
     }
-  }
+  };
 
-  document.getElementById("result").innerHTML =
-    result || "<p>No buses found 😢</p>";
-}
+  // QR AUTO SEARCH
+  const params = new URLSearchParams(window.location.search);
+  const busParam = params.get("bus");
 
-// MAP
-function openMap(link) {
-  window.open(link, "_blank");
-}
-
-// ENTER KEY
-function handleKey(event) {
-  if (event.key === "Enter") {
+  if (busParam) {
+    document.getElementById("search").value = busParam;
     searchBus();
   }
-}
 
-// LANGUAGE
-function changeLanguage(lang) {
-  if (lang === "ta") {
-    document.getElementById("title").innerText = "🚌 ஸ்மார்ட் பஸ் அமைப்பு";
-    document.getElementById("searchText").innerText = "நீங்கள் செல்ல விரும்பும் இடத்தை தேடுங்கள்";
-    document.getElementById("qrText").innerText = "பஸ் QR ஸ்கேன் செய்யவும்";
-  } else if (lang === "hi") {
-    document.getElementById("title").innerText = "🚌 स्मार्ट बस सिस्टम";
-    document.getElementById("searchText").innerText = "अपना गंतव्य खोजें";
-    document.getElementById("qrText").innerText = "बस QR स्कैन करें";
-  } else {
-    document.getElementById("title").innerText = "🚌 Smart Bus Finder";
-    document.getElementById("searchText").innerText = "Search your destination";
-    document.getElementById("qrText").innerText = "Scan QR on Bus to view details";
-  }
-}
+});
 
-// QR AUTO SEARCH (SUPER SIMPLE)
-var params = new URLSearchParams(window.location.search);
-var busParam = params.get("bus");
-
-if (busParam) {
-  document.getElementById("search").value = busParam;
-  searchBus();
-}
+</script>
 
 </script>
 
