@@ -81,8 +81,6 @@ select {
 
 <div class="container">
 
-<!-- Language -->
-
 <select onchange="changeLanguage(this.value)">
   <option value="en">English</option>
   <option value="ta">தமிழ்</option>
@@ -103,7 +101,7 @@ select {
 
 <script>
 
-// BUS DATA WITH MAP LINKS
+// BUS DATA
 const buses = [
   {
     number: "21G",
@@ -125,7 +123,7 @@ const buses = [
   }
 ];
 
-// SEARCH FUNCTION
+// SEARCH
 function searchBus() {
   let input = document.getElementById("search").value.toLowerCase();
   let result = "";
@@ -151,7 +149,7 @@ function searchBus() {
     result || "<p>No buses found 😢</p>";
 }
 
-// OPEN MAP
+// MAP
 function openMap(link) {
   window.open(link, "_blank");
 }
@@ -162,36 +160,53 @@ function handleKey(event) {
     searchBus();
   }
 }
+
+// 🔥 AUTO LOAD FROM QR (IMPORTANT PART)
 window.onload = function () {
-const params = new URLSearchParams(window.location.search);
-const busParam = params.get("bus");
+  const params = new URLSearchParams(window.location.search);
+  const busParam = params.get("bus");
 
-if (busParam) {
-let result = "";
+  if (busParam) {
+    let result = "";
 
-```
-buses.forEach(bus => {
-  if (bus.number.toLowerCase() === busParam.toLowerCase()) {
-    result += `
-    <div class="card">
-      <h3>🚌 Bus ${bus.number}</h3>
-      <p>Route: ${bus.stops.join(" → ")}</p>
-      <p>Fare: ${bus.fare}</p>
-      <button onclick="openMap('${bus.map}')">View Route Map 🗺️</button>
-    </div>`;
+    buses.forEach(bus => {
+      if (bus.number.toLowerCase() === busParam.toLowerCase()) {
+        result += `
+        <div class="card">
+          <h3>🚌 Bus ${bus.number}</h3>
+          <p>Route: ${bus.stops.join(" → ")}</p>
+          <p>Fare: ${bus.fare}</p>
+          <button onclick="openMap('${bus.map}')">View Route Map 🗺️</button>
+        </div>`;
+      }
+    });
+
+    document.getElementById("result").innerHTML =
+      result || "<p>Bus not found 😢</p>";
   }
-});
-
-document.getElementById("result").innerHTML =
-  result || "<p>Bus not found 😢</p>";
-```
-
-}
 };
+
+// LANGUAGE
+function changeLanguage(lang) {
+  if (lang === "ta") {
+    document.getElementById("title").innerText = "🚌 ஸ்மார்ட் பஸ் அமைப்பு";
+    document.getElementById("searchText").innerText = "நீங்கள் செல்ல விரும்பும் இடத்தை தேடுங்கள்";
+    document.getElementById("qrText").innerText = "பஸ் QR ஸ்கேன் செய்யவும்";
+  }
+  else if (lang === "hi") {
+    document.getElementById("title").innerText = "🚌 स्मार्ट बस सिस्टम";
+    document.getElementById("searchText").innerText = "अपना गंतव्य खोजें";
+    document.getElementById("qrText").innerText = "बस QR स्कैन करें";
+  }
+  else {
+    document.getElementById("title").innerText = "🚌 Smart Bus Finder";
+    document.getElementById("searchText").innerText = "Search your destination";
+    document.getElementById("qrText").innerText = "Scan QR on Bus to view details";
+  }
+}
 
 </script>
 
-
-
 </body>
 </html>
+
