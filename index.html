@@ -131,16 +131,21 @@ function searchBus() {
 
   buses.forEach(bus => {
     bus.stops.forEach(stop => {
-      if (stop.toLowerCase().includes(input) && !shown.has(bus.number)) {
-        shown.add(bus.number);
+      if (
+        stop.toLowerCase().includes(input) ||
+        bus.number.toLowerCase().includes(input)
+      ) {
+        if (!shown.has(bus.number)) {
+          shown.add(bus.number);
 
-        result += `
-        <div class="card">
-          <h3>🚌 Bus ${bus.number}</h3>
-          <p>Route: ${bus.stops.join(" → ")}</p>
-          <p>Fare: ${bus.fare}</p>
-          <button onclick="openMap('${bus.map}')">View Route Map 🗺️</button>
-        </div>`;
+          result += `
+          <div class="card">
+            <h3>🚌 Bus ${bus.number}</h3>
+            <p>Route: ${bus.stops.join(" → ")}</p>
+            <p>Fare: ${bus.fare}</p>
+            <button onclick="openMap('${bus.map}')">View Route Map 🗺️</button>
+          </div>`;
+        }
       }
     });
   });
@@ -161,30 +166,14 @@ function handleKey(event) {
   }
 }
 
-// 🔥 AUTO LOAD FROM QR (IMPORTANT PART)
-window.onload = function () {
-  const params = new URLSearchParams(window.location.search);
-  const busParam = params.get("bus");
+// 🔥 ULTRA SIMPLE QR AUTO SEARCH
+const params = new URLSearchParams(window.location.search);
+const busParam = params.get("bus");
 
-  if (busParam) {
-    let result = "";
-
-    buses.forEach(bus => {
-      if (bus.number.toLowerCase() === busParam.toLowerCase()) {
-        result += `
-        <div class="card">
-          <h3>🚌 Bus ${bus.number}</h3>
-          <p>Route: ${bus.stops.join(" → ")}</p>
-          <p>Fare: ${bus.fare}</p>
-          <button onclick="openMap('${bus.map}')">View Route Map 🗺️</button>
-        </div>`;
-      }
-    });
-
-    document.getElementById("result").innerHTML =
-      result || "<p>Bus not found 😢</p>";
-  }
-};
+if (busParam) {
+  document.getElementById("search").value = busParam;
+  searchBus();
+}
 
 // LANGUAGE
 function changeLanguage(lang) {
@@ -204,35 +193,8 @@ function changeLanguage(lang) {
     document.getElementById("qrText").innerText = "Scan QR on Bus to view details";
   }
 }
-document.addEventListener("DOMContentLoaded", function () {
-const params = new URLSearchParams(window.location.search);
-const busParam = params.get("bus");
-
-if (busParam) {
-let result = "";
-
-```
-buses.forEach(bus => {
-  if (bus.number.toLowerCase() === busParam.toLowerCase()) {
-    result += `
-    <div class="card">
-      <h3>🚌 Bus ${bus.number}</h3>
-      <p>Route: ${bus.stops.join(" → ")}</p>
-      <p>Fare: ${bus.fare}</p>
-      <button onclick="openMap('${bus.map}')">View Route Map 🗺️</button>
-    </div>`;
-  }
-});
-
-document.getElementById("result").innerHTML =
-  result || "<p>Bus not found 😢</p>";
-```
-
-}
-});
 
 </script>
 
 </body>
 </html>
-
