@@ -103,24 +103,32 @@ select {
 
 // BUS DATA
 const buses = [
+const buses = [
   {
     number: "21G",
     stops: ["Central Station", "Park", "Marina Beach"],
     fare: "₹15",
-    map: "https://www.google.com/maps/dir/Central+Station/Marina+Beach"
+    timing: "Every 10 mins",
+    next: "5 mins",
+    map: "https://www.google.com/maps/dir/?api=1&origin=Central+Station&destination=Marina+Beach&travelmode=transit"
   },
   {
     number: "47A",
     stops: ["T Nagar", "Museum", "Marina Beach"],
     fare: "₹20",
-    map: "https://www.google.com/maps/dir/T+Nagar/Marina+Beach"
+    timing: "Every 15 mins",
+    next: "8 mins",
+    map: "https://www.google.com/maps/dir/?api=1&origin=T+Nagar&destination=Marina+Beach&travelmode=transit"
   },
   {
     number: "5E",
     stops: ["Tambaram", "Guindy", "T Nagar"],
     fare: "₹18",
-    map: "https://www.google.com/maps/dir/Tambaram/T+Nagar"
+    timing: "Every 20 mins",
+    next: "12 mins",
+    map: "https://www.google.com/maps/dir/?api=1&origin=Tambaram&destination=T+Nagar&travelmode=transit"
   }
+];
 ];
 
 // SEARCH
