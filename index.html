@@ -12,6 +12,12 @@ body {
   background: linear-gradient(135deg, #1a1a1a, #000);
   color: white;
   text-align: center;
+  transition: 0.3s;
+}
+
+.light {
+  background: #ffffff;
+  color: #000;
 }
 
 header {
@@ -29,33 +35,31 @@ header {
 input {
   padding: 12px;
   width: 60%;
-  font-size: 16px;
   border-radius: 12px;
   border: none;
 }
 
 button {
-  padding: 12px 18px;
-  margin: 10px;
+  padding: 10px 15px;
+  margin: 5px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #ffcc00;
-  font-weight: bold;
   cursor: pointer;
 }
 
 .card {
-  background: #222;
+  background: rgba(255,255,255,0.1);
   margin: 15px auto;
-  padding: 20px;
-  border-radius: 15px;
+  padding: 15px;
+  border-radius: 12px;
   width: 70%;
 }
 
-select {
-  padding: 10px;
-  border-radius: 10px;
+.light .card {
+  background: #eee;
 }
+
 </style>
 
 </head>
@@ -72,11 +76,14 @@ select {
   <option value="hi">हिन्दी</option>
 </select>
 
+<h3 id="clock"></h3>
+
 <h2 id="searchText">Search your destination</h2>
 
 <input type="text" id="search" placeholder="Enter place..." onkeypress="handleKey(event)">
 <br>
-<button onclick="searchBus()">Search</button>
+
+<button onclick="searchBus()">Search</button> <button onclick="startVoice()">🎤 Speak</button> <button onclick="toggleTheme()">🌙 Mode</button>
 
 <div id="result"></div>
 
@@ -85,91 +92,148 @@ select {
 </div>
 
 <script>
-<script>
 
-document.addEventListener("DOMContentLoaded", function () {
+// BUS DATA
+const buses = [
+  {
+    number: "21G",
+    stops: ["Central Station", "Park", "Marina Beach"],
+    fare: "₹15",
+    timing: "Every 10 mins",
+    next: "5 mins",
+    map: "https://www.google.com/maps/dir/?api=1&origin=Central+Station&destination=Marina+Beach&travelmode=transit"
+  },
+  {
+    number: "47A",
+    stops: ["T Nagar", "Museum", "Marina Beach"],
+    fare: "₹20",
+    timing: "Every 15 mins",
+    next: "8 mins",
+    map: "https://www.google.com/maps/dir/?api=1&origin=T+Nagar&destination=Marina+Beach&travelmode=transit"
+  },
+  {
+    number: "5E",
+    stops: ["Tambaram", "Guindy", "T Nagar"],
+    fare: "₹18",
+    timing: "Every 20 mins",
+    next: "12 mins",
+    map: "https://www.google.com/maps/dir/?api=1&origin=Tambaram&destination=T+Nagar&travelmode=transit"
+  }
+];
 
-  const buses = [
-    {
-      number: "21G",
-      stops: ["Central Station", "Park", "Marina Beach"],
-      fare: "₹15",
-      timing: "Every 10 mins",
-      next: "5 mins",
-      map: "https://www.google.com/maps/dir/?api=1&origin=Central+Station&destination=Marina+Beach&travelmode=transit"
-    },
-    {
-      number: "47A",
-      stops: ["T Nagar", "Museum", "Marina Beach"],
-      fare: "₹20",
-      timing: "Every 15 mins",
-      next: "8 mins",
-      map: "https://www.google.com/maps/dir/?api=1&origin=T+Nagar&destination=Marina+Beach&travelmode=transit"
-    },
-    {
-      number: "5E",
-      stops: ["Tambaram", "Guindy", "T Nagar"],
-      fare: "₹18",
-      timing: "Every 20 mins",
-      next: "12 mins",
-      map: "https://www.google.com/maps/dir/?api=1&origin=Tambaram&destination=T+Nagar&travelmode=transit"
-    }
-  ];
+// SEARCH
+function searchBus() {
+  const input = document.getElementById("search").value.toLowerCase().trim();
+  let result = "";
+  let shown = {};
+  let count = 0;
 
-  window.searchBus = function () {
-    const input = document.getElementById("search").value.toLowerCase();
-    let result = "";
-    let shown = {};
+  buses.forEach(function(bus) {
 
-    buses.forEach(bus => {
-      let match = bus.number.toLowerCase().includes(input) ||
-        bus.stops.some(stop => stop.toLowerCase().includes(input));
-
-      if (match && !shown[bus.number]) {
-        shown[bus.number] = true;
-
-        result += "<div class='card'>" +
-          "<h3>🚌 Bus " + bus.number + "</h3>" +
-          "<p>Route: " + bus.stops.join(" → ") + "</p>" +
-          "<p>Fare: " + bus.fare + "</p>" +
-          "<p>⏰ Next Bus: " + bus.next + "</p>" +
-          "<p>📅 Frequency: " + bus.timing + "</p>" +
-          "<button onclick=\"openMap('" + bus.map + "')\">View Route Map 🗺️</button>" +
-        "</div>";
-      }
+    let numberMatch = bus.number.toLowerCase().includes(input);
+    let stopMatch = bus.stops.some(function(stop) {
+      return stop.toLowerCase().includes(input);
     });
 
-    document.getElementById("result").innerHTML =
-      result || "<p>No buses found 😢</p>";
-  };
+    if ((numberMatch || stopMatch) && !shown[bus.number]) {
+      shown[bus.number] = true;
+      count++;
 
-  window.openMap = function (link) {
-    window.open(link, "_blank");
-  };
-
-  window.handleKey = function (event) {
-    if (event.key === "Enter") {
-      searchBus();
+      result += "<div class='card'>" +
+        "<h3>🚌 Bus " + bus.number + "</h3>" +
+        "<p>Route: " + bus.stops.join(" → ") + "</p>" +
+        "<p>Fare: " + bus.fare + "</p>" +
+        "<p>⏰ Next: " + bus.next + "</p>" +
+        "<p>📅 " + bus.timing + "</p>" +
+        "<button onclick=\"openMap('" + bus.map + "')\">🗺️ Map</button>" +
+        "<button onclick=\"toggleFavorite('" + bus.number + "')\">" +
+        (isFavorite(bus.number) ? "⭐ Saved" : "☆ Save") +
+        "</button>" +
+      "</div>";
     }
+
+  });
+
+  document.getElementById("result").innerHTML =
+    (count ? "<h3>" + count + " buses found</h3>" : "") +
+    (result || "<p>No buses found 😢</p>");
+}
+
+// FAVORITES
+function toggleFavorite(busNumber) {
+  let favs = JSON.parse(localStorage.getItem("favs")) || [];
+
+  if (favs.includes(busNumber)) {
+    favs = favs.filter(b => b !== busNumber);
+  } else {
+    favs.push(busNumber);
+  }
+
+  localStorage.setItem("favs", JSON.stringify(favs));
+  searchBus();
+}
+
+function isFavorite(busNumber) {
+  let favs = JSON.parse(localStorage.getItem("favs")) || [];
+  return favs.includes(busNumber);
+}
+
+// MAP
+function openMap(link) {
+  window.open(link, "_blank");
+}
+
+// ENTER KEY
+function handleKey(event) {
+  if (event.key === "Enter") {
+    searchBus();
+  }
+}
+
+// VOICE SEARCH
+function startVoice() {
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = "en-IN";
+
+  recognition.onresult = function(event) {
+    document.getElementById("search").value = event.results[0][0].transcript;
+    searchBus();
   };
 
-  window.changeLanguage = function (lang) {
-    if (lang === "ta") {
-      document.getElementById("title").innerText = "🚌 ஸ்மார்ட் பஸ் அமைப்பு";
-      document.getElementById("searchText").innerText = "நீங்கள் செல்ல விரும்பும் இடத்தை தேடுங்கள்";
-      document.getElementById("qrText").innerText = "பஸ் QR ஸ்கேன் செய்யவும்";
-    } else if (lang === "hi") {
-      document.getElementById("title").innerText = "🚌 स्मार्ट बस सिस्टम";
-      document.getElementById("searchText").innerText = "अपना गंतव्य खोजें";
-      document.getElementById("qrText").innerText = "बस QR स्कैन करें";
-    } else {
-      document.getElementById("title").innerText = "🚌 Smart Bus Finder";
-      document.getElementById("searchText").innerText = "Search your destination";
-      document.getElementById("qrText").innerText = "Scan QR on Bus to view details";
-    }
-  };
+  recognition.start();
+}
 
-  // QR AUTO SEARCH
+// THEME
+function toggleTheme() {
+  document.body.classList.toggle("light");
+}
+
+// LANGUAGE
+function changeLanguage(lang) {
+  if (lang === "ta") {
+    document.getElementById("title").innerText = "🚌 ஸ்மார்ட் பஸ் அமைப்பு";
+    document.getElementById("searchText").innerText = "இடத்தை தேடுங்கள்";
+  } else if (lang === "hi") {
+    document.getElementById("title").innerText = "🚌 स्मार्ट बस सिस्टम";
+    document.getElementById("searchText").innerText = "अपना गंतव्य खोजें";
+  } else {
+    document.getElementById("title").innerText = "🚌 Smart Bus Finder";
+    document.getElementById("searchText").innerText = "Search your destination";
+  }
+}
+
+// CLOCK
+setInterval(() => {
+  document.getElementById("clock").innerText =
+    new Date().toLocaleTimeString();
+}, 1000);
+
+// INTERNET STATUS
+window.addEventListener("offline", () => alert("⚠️ No Internet"));
+window.addEventListener("online", () => alert("✅ Back Online"));
+
+// QR AUTO
+window.onload = function () {
   const params = new URLSearchParams(window.location.search);
   const busParam = params.get("bus");
 
@@ -177,10 +241,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("search").value = busParam;
     searchBus();
   }
-
-});
-
-</script>
+};
 
 </script>
 
