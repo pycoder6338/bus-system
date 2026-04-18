@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -6,58 +7,112 @@
 <title>Smart Bus System</title>
 
 <style>
+
+/* 🌈 BACKGROUND ANIMATION */
 body {
-  font-family: Arial;
+  font-family: 'Segoe UI', sans-serif;
   margin: 0;
-  background: linear-gradient(135deg, #1a1a1a, #000);
   color: white;
   text-align: center;
-  transition: 0.3s;
+  background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #00c6ff);
+  background-size: 400% 400%;
+  animation: bgMove 10s ease infinite;
 }
 
-.light {
-  background: #ffffff;
-  color: #000;
+@keyframes bgMove {
+  0% {background-position: 0%;}
+  50% {background-position: 100%;}
+  100% {background-position: 0%;}
 }
 
 header {
-  background: #ffcc00;
-  color: black;
-  padding: 15px;
-  font-size: 26px;
+  font-size: 28px;
+  padding: 20px;
   font-weight: bold;
 }
 
-.container {
-  padding: 20px;
-}
-
+/* INPUT */
 input {
   padding: 12px;
   width: 60%;
-  border-radius: 12px;
+  border-radius: 30px;
   border: none;
+  outline: none;
+  text-align: center;
 }
 
+/* BUTTON */
 button {
   padding: 10px 15px;
-  margin: 5px;
+  margin: 8px;
+  border-radius: 20px;
   border: none;
-  border-radius: 10px;
-  background: #ffcc00;
+  background: #00c6ff;
+  color: black;
+  font-weight: bold;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: 0.3s;
 }
 
+button:hover {
+  transform: scale(1.1);
+}
+
+/* CARD */
 .card {
   background: rgba(255,255,255,0.1);
-  margin: 15px auto;
-  padding: 15px;
-  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 20px;
   width: 70%;
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  animation: fadeIn 0.4s ease;
+  transition: 0.3s;
 }
 
-.light .card {
-  background: #eee;
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 0 25px rgba(0,198,255,0.6);
+}
+
+/* BADGES */
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 5px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.5);
+}
+
+/* LOADER */
+.loader {
+  margin: 20px auto;
+  border: 5px solid rgba(255,255,255,0.2);
+  border-top: 5px solid #00c6ff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+.fav-title {
+  margin-top: 40px;
 }
 
 </style>
@@ -66,34 +121,24 @@ button {
 
 <body>
 
-<header id="title">🚌 Smart Bus Finder</header>
+<header>🚌 Smart Bus Finder</header>
 
-<div class="container">
-
-<select onchange="changeLanguage(this.value)">
-  <option value="en">English</option>
-  <option value="ta">தமிழ்</option>
-  <option value="hi">हिन्दी</option>
-</select>
-
-<h3 id="clock"></h3>
-
-<h2 id="searchText">Search your destination</h2>
-
-<input type="text" id="search" placeholder="Enter place..." onkeypress="handleKey(event)">
+<input type="text" id="search" placeholder="Search bus number or destination (e.g. 21G, Marina Beach)" onkeypress="handleKey(event)">
 <br>
 
-<button onclick="searchBus()">Search</button> <button onclick="startVoice()">🎤 Speak</button> <button onclick="toggleTheme()">🌙 Mode</button>
+<button onclick="searchBus()">Search</button> <button onclick="startVoice()">🎤 Speak</button>
+
+<button onclick="showAll()">🚌 Show All Buses</button>
+
+<div id="loader" class="loader hidden"></div>
 
 <div id="result"></div>
 
-<h2 id="qrText">Scan QR on Bus to view details</h2>
-
-</div>
+<h2 class="fav-title">⭐ Your Favorites</h2>
+<div id="favorites"></div>
 
 <script>
 
-// BUS DATA
 const buses = [
   {
     number: "21G",
@@ -124,58 +169,97 @@ const buses = [
 // SEARCH
 function searchBus() {
   const input = document.getElementById("search").value.toLowerCase().trim();
-  let result = "";
-  let shown = {};
-  let count = 0;
+  const loader = document.getElementById("loader");
+  const resultDiv = document.getElementById("result");
 
-  buses.forEach(function(bus) {
+  loader.classList.remove("hidden");
+  resultDiv.innerHTML = "";
 
-    let numberMatch = bus.number.toLowerCase().includes(input);
-    let stopMatch = bus.stops.some(function(stop) {
-      return stop.toLowerCase().includes(input);
-    });
+  setTimeout(() => {
+    try {
+      let result = "";
+      let count = 0;
 
-    if ((numberMatch || stopMatch) && !shown[bus.number]) {
-      shown[bus.number] = true;
-      count++;
+      buses.forEach(bus => {
+        if (
+          input === "" ||
+          bus.number.toLowerCase().includes(input) ||
+          bus.stops.join(" ").toLowerCase().includes(input)
+        ) {
+          result += createCard(bus);
+          count++;
+        }
+      });
 
-      result += "<div class='card'>" +
-        "<h3>🚌 Bus " + bus.number + "</h3>" +
-        "<p>Route: " + bus.stops.join(" → ") + "</p>" +
-        "<p>Fare: " + bus.fare + "</p>" +
-        "<p>⏰ Next: " + bus.next + "</p>" +
-        "<p>📅 " + bus.timing + "</p>" +
-        "<button onclick=\"openMap('" + bus.map + "')\">🗺️ Map</button>" +
-        "<button onclick=\"toggleFavorite('" + bus.number + "')\">" +
-        (isFavorite(bus.number) ? "⭐ Saved" : "☆ Save") +
-        "</button>" +
-      "</div>";
+resultDiv.innerHTML =
+  (count ? "<h3 style='opacity:0.8'>" + count + " buses found</h3>" : "") +
+  (result || "<p style='opacity:0.7'>🚫 No buses found<br>Try searching another location</p>");
+    } catch (err) {
+      console.error(err);
+      resultDiv.innerHTML = "<p>⚠️ Error loading buses</p>";
+    } finally {
+      loader.classList.add("hidden");
     }
-
-  });
-
-  document.getElementById("result").innerHTML =
-    (count ? "<h3>" + count + " buses found</h3>" : "") +
-    (result || "<p>No buses found 😢</p>");
+  }, 400);
 }
 
-// FAVORITES
-function toggleFavorite(busNumber) {
-  let favs = JSON.parse(localStorage.getItem("favs")) || [];
+// SHOW ALL CARD
 
-  if (favs.includes(busNumber)) {
-    favs = favs.filter(b => b !== busNumber);
-  } else {
-    favs.push(busNumber);
-  }
-
-  localStorage.setItem("favs", JSON.stringify(favs));
+function showAll() {
+  document.getElementById("search").value = "";
   searchBus();
 }
 
-function isFavorite(busNumber) {
+// CARD
+function createCard(bus) {
+  return `
+  <div class="card">
+    <h2>🚌 ${bus.number}</h2>
+    <p>${bus.stops.join(" → ")}</p>
+
+    <div class="badge">💸 ${bus.fare}</div>
+    <div class="badge">⏰ ${bus.next}</div>
+    <div class="badge">📅 ${bus.timing}</div>
+
+    <br>
+    <button onclick="openMap('${bus.map}')">🗺️ Map</button>
+    <button onclick="toggleFav('${bus.number}')">
+      ${isFav(bus.number) ? "⭐ Saved" : "☆ Save"}
+    </button>
+  </div>`;
+}
+
+// FAVORITES
+function toggleFav(num) {
   let favs = JSON.parse(localStorage.getItem("favs")) || [];
-  return favs.includes(busNumber);
+
+  if (favs.includes(num)) {
+    favs = favs.filter(f => f !== num);
+  } else {
+    favs.push(num);
+  }
+
+  localStorage.setItem("favs", JSON.stringify(favs));
+  renderFavs();
+  searchBus();
+}
+
+function isFav(num) {
+  let favs = JSON.parse(localStorage.getItem("favs")) || [];
+  return favs.includes(num);
+}
+
+function renderFavs() {
+  let favs = JSON.parse(localStorage.getItem("favs")) || [];
+  let html = "";
+
+  favs.forEach(num => {
+    let bus = buses.find(b => b.number === num);
+    if (bus) html += createCard(bus);
+  });
+
+  document.getElementById("favorites").innerHTML =
+    html || "<p>No favorites yet ⭐</p>";
 }
 
 // MAP
@@ -183,64 +267,27 @@ function openMap(link) {
   window.open(link, "_blank");
 }
 
-// ENTER KEY
-function handleKey(event) {
-  if (event.key === "Enter") {
-    searchBus();
-  }
+// ENTER
+function handleKey(e) {
+  if (e.key === "Enter") searchBus();
 }
 
-// VOICE SEARCH
+// VOICE
 function startVoice() {
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = "en-IN";
+  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  rec.lang = "en-IN";
 
-  recognition.onresult = function(event) {
-    document.getElementById("search").value = event.results[0][0].transcript;
+  rec.onresult = function(e) {
+    document.getElementById("search").value = e.results[0][0].transcript;
     searchBus();
   };
 
-  recognition.start();
+  rec.start();
 }
 
-// THEME
-function toggleTheme() {
-  document.body.classList.toggle("light");
-}
-
-// LANGUAGE
-function changeLanguage(lang) {
-  if (lang === "ta") {
-    document.getElementById("title").innerText = "🚌 ஸ்மார்ட் பஸ் அமைப்பு";
-    document.getElementById("searchText").innerText = "இடத்தை தேடுங்கள்";
-  } else if (lang === "hi") {
-    document.getElementById("title").innerText = "🚌 स्मार्ट बस सिस्टम";
-    document.getElementById("searchText").innerText = "अपना गंतव्य खोजें";
-  } else {
-    document.getElementById("title").innerText = "🚌 Smart Bus Finder";
-    document.getElementById("searchText").innerText = "Search your destination";
-  }
-}
-
-// CLOCK
-setInterval(() => {
-  document.getElementById("clock").innerText =
-    new Date().toLocaleTimeString();
-}, 1000);
-
-// INTERNET STATUS
-window.addEventListener("offline", () => alert("⚠️ No Internet"));
-window.addEventListener("online", () => alert("✅ Back Online"));
-
-// QR AUTO
-window.onload = function () {
-  const params = new URLSearchParams(window.location.search);
-  const busParam = params.get("bus");
-
-  if (busParam) {
-    document.getElementById("search").value = busParam;
-    searchBus();
-  }
+// LOAD
+window.onload = function() {
+  renderFavs();
 };
 
 </script>
