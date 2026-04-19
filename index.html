@@ -218,6 +218,7 @@ districts.forEach(d=>{
 
 // SEARCH
 function searchBus(){
+  document.getElementById("favTabBtn").classList.remove("active");
   const input=document.getElementById("search").value.toLowerCase();
   const loader=document.getElementById("loader");
   const resultDiv=document.getElementById("result");
@@ -231,7 +232,8 @@ function searchBus(){
 
     buses.forEach(bus=>{
       let matchSearch = input==="" || bus.number.toLowerCase().includes(input) || bus.stops.join(" ").toLowerCase().includes(input);
-      let matchDistrict = input!=="" || selectedDistrict==="All" ? true : bus.district===selectedDistrict;
+      let matchDistrict =
+  selectedDistrict === "All" || bus.district === selectedDistrict;
 
       if(matchSearch && matchDistrict){
         result+=createCard(bus);
@@ -239,9 +241,14 @@ function searchBus(){
       }
     });
 
-    resultDiv.innerHTML =
-      (count?`<h3>${count} buses found</h3>`:"") +
-      (result || "🚫 No buses found");
+let suggestion = getSuggestion(input);
+
+resultDiv.innerHTML =
+  (count ? `<h3>${count} buses found</h3>` : "") +
+  (result || `
+    🚫 No buses found<br>
+    ${suggestion ? `Did you mean <b onclick="useSuggestion('${suggestion}')">${suggestion}</b>?` : "Try another search"}
+  `);
 
     speak(count? count+" buses found":"No buses found");
 
@@ -249,6 +256,11 @@ function searchBus(){
 
     document.getElementById("favSection").style.display="block";
   },300);
+}
+
+function useSuggestion(text) {
+  document.getElementById("search").value = text;
+  searchBus();
 }
 
 // SHOW ALL
@@ -324,19 +336,28 @@ function openMap(link){window.open(link,"_blank");}
 function startVoice(){
   let rec=new (window.SpeechRecognition||window.webkitSpeechRecognition)();
   rec.lang="en-IN";
-
+ !target
   rec.onstart=()=>{
     let i=document.getElementById("search");
     i.placeholder="🎤 Listening...";
     i.classList.add("listening");
   };
 
-  rec.onresult=e=>{
-    let text=e.results[0][0].transcript;
-    document.getElementById("search").value=text;
-    speak("Searching for "+text);
+rec.onresult = (event) => {
+  const text = event.results[0][0].transcript.toLowerCase();
+
+  document.getElementById("search").value = text;
+
+  speak("Searching for " + text);
+
+  // 🔥 trigger suggestions first
+  document.getElementById("search").dispatchEvent(new Event("input"));
+
+  // then search
+  setTimeout(() => {
     searchBus();
-  };
+  }, 300);
+};
 
   rec.onend=()=>{
     let i=document.getElementById("search");
@@ -389,7 +410,10 @@ document.getElementById("search").addEventListener("input", function () {
 
     let div = document.createElement("div");
     div.className = "suggestion-item";
-    div.innerText = item;
+    div.innerHTML = item.replace(
+  new RegExp(input, "gi"),
+  match => `<b style="color:#00c6ff">${match}</b>`
+);
 
     div.onclick = () => {
       let cleanText = item.replace("🚌 ", "").replace("📍 ", "");
@@ -403,13 +427,17 @@ document.getElementById("search").addEventListener("input", function () {
   });
 });
 
-document.addEventListener("click", (e) => {
-  if (!e.target.closest("#search")) {
-    suggestionBox.innerHTML = "";
-  }
-});
+document.addEventListener("click"), (e) => {
+  if (!e.target.closest("#search") && !e.target.closest("#suggestions")) {
+  suggestionBox.innerHTML = "";
+}}
 
-let currentIndex = -1;
+document.getElementById("search").addEventListener("input"), function () {
+  const input = this.value.toLowerCase().trim()};
+
+  currentIndex = -1; // 👈 ADD THIS
+
+  suggestionBox.innerHTML = "";
 
 document.getElementById("search").addEventListener("keydown", (e) => {
   const items = document.querySelectorAll(".suggestion-item");
@@ -435,6 +463,42 @@ document.getElementById("search").addEventListener("keydown", (e) => {
   });
 });
 
+function similarity(a, b) {
+  let longer = a.length > b.length ? a : b;
+  let shorter = a.length > b.length ? b : a;
+
+  let same = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer[i] === shorter[i]) same++;
+  }
+
+  return same / longer.length;
+}
+
+function getSuggestion(input) {
+  let bestMatch = "";
+  let bestScore = 0;
+
+  buses.forEach(bus => {
+    // check bus number
+    let scoreNum = similarity(input, bus.number.toLowerCase());
+    if (scoreNum > bestScore) {
+      bestScore = scoreNum;
+      bestMatch = bus.number;
+    }
+
+    // check stops
+    bus.stops.forEach(stop => {
+      let scoreStop = similarity(input, stop.toLowerCase());
+      if (scoreStop > bestScore) {
+        bestScore = scoreStop;
+        bestMatch = stop;
+      }
+    });
+  });
+
+  return bestScore > 0.4 ? bestMatch : "";
+}
 
 </script>
 </body>
