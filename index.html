@@ -1,28 +1,25 @@
-
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Smart Bus System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Bus Finder</title>
 
 <style>
-
-/* 🌈 BACKGROUND ANIMATION */
 body {
-  font-family: 'Segoe UI', sans-serif;
   margin: 0;
+  font-family: 'Segoe UI', sans-serif;
   color: white;
   text-align: center;
-  background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #00c6ff);
+  background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #ff0080);
   background-size: 400% 400%;
-  animation: bgMove 10s ease infinite;
+  animation: bgMove 12s ease infinite;
 }
 
 @keyframes bgMove {
-  0% {background-position: 0%;}
-  50% {background-position: 100%;}
-  100% {background-position: 0%;}
+  0% {background-position: 0%}
+  50% {background-position: 100%}
+  100% {background-position: 0%}
 }
 
 header {
@@ -31,266 +28,414 @@ header {
   font-weight: bold;
 }
 
-/* INPUT */
+.tagline { opacity: 0.7; }
+
 input {
   padding: 12px;
-  width: 60%;
+  width: 70%;
+  max-width: 400px;
   border-radius: 30px;
   border: none;
-  outline: none;
   text-align: center;
+  background: rgba(255,255,255,0.1);
+  color: white;
 }
 
-/* BUTTON */
+input.listening {
+  box-shadow: 0 0 25px #00c6ff;
+}
+
 button {
-  padding: 10px 15px;
-  margin: 8px;
+  padding: 10px;
+  margin: 5px;
   border-radius: 20px;
   border: none;
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  color: white;
+  cursor: pointer;
+}
+
+.filter-bar {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  cursor: pointer;
+}
+
+.filter-btn.active {
   background: #00c6ff;
   color: black;
-  font-weight: bold;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: 0.3s;
 }
 
-button:hover {
-  transform: scale(1.1);
-}
-
-/* CARD */
 .card {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(12px);
-  margin: 20px auto;
+  margin: 15px auto;
   padding: 20px;
+  width: 90%;
+  max-width: 500px;
   border-radius: 20px;
-  width: 70%;
-  box-shadow: 0 0 20px rgba(0,0,0,0.4);
-  animation: fadeIn 0.4s ease;
-  transition: 0.3s;
+  background: rgba(255,255,255,0.1);
+  cursor: pointer;
 }
 
-.card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 0 25px rgba(0,198,255,0.6);
-}
-
-/* BADGES */
 .badge {
   display: inline-block;
-  padding: 6px 12px;
   margin: 5px;
+  padding: 5px 10px;
   border-radius: 20px;
   background: rgba(0,0,0,0.5);
 }
 
-/* LOADER */
 .loader {
-  margin: 20px auto;
   border: 5px solid rgba(255,255,255,0.2);
   border-top: 5px solid #00c6ff;
   border-radius: 50%;
   width: 40px;
   height: 40px;
+  margin: 20px auto;
   animation: spin 1s linear infinite;
 }
 
-.hidden {
-  display: none;
-}
+.hidden { display: none; }
 
 @keyframes spin {
   100% { transform: rotate(360deg); }
 }
 
-@keyframes fadeIn {
-  from {opacity: 0; transform: translateY(10px);}
-  to {opacity: 1; transform: translateY(0);}
+/* 🔍 Suggestions Box */
+.suggestions {
+  width: 70%;
+  max-width: 400px;
+  margin: 5px auto;
+  background: rgba(0,0,0,0.6);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  text-align: left;
+  overflow: hidden;
+  position: relative;
+  z-index: 1000;
 }
 
-.fav-title {
-  margin-top: 40px;
+.suggestion-item {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  transition: 0.2s;
+}
+
+.suggestion-item:hover {
+  background: rgba(0,198,255,0.3);
 }
 
 </style>
-
 </head>
 
 <body>
 
 <header>🚌 Smart Bus Finder</header>
+<p class="tagline">📍 Helping commuters & tourists find buses easily</p>
 
-<input type="text" id="search" placeholder="Search bus number or destination (e.g. 21G, Marina Beach)" onkeypress="handleKey(event)">
+<input id="search" placeholder="Search bus number or destination">
 <br>
 
-<button onclick="searchBus()">Search</button> <button onclick="startVoice()">🎤 Speak</button>
+<div id="suggestions" class="suggestions"></div>
 
-<button onclick="showAll()">🚌 Show All Buses</button>
+<div class="filter-bar" id="districtBar"></div>
+<button class="filter-btn" id="favTabBtn" onclick="showFavoritesTab()">⭐ Favorites</button>
+
+<br>
+<button onclick="searchBus()">Search</button>
+<button onclick="showAll()">Show All</button>
+<button onclick="startVoice()">🎤 Voice</button>
 
 <div id="loader" class="loader hidden"></div>
-
 <div id="result"></div>
 
-<h2 class="fav-title">⭐ Your Favorites</h2>
-<div id="favorites"></div>
+<div id="favSection">
+  <h2>⭐ Favorites</h2>
+  <div id="favorites"></div>
+</div>
 
 <script>
 
-const buses = [
-  {
-    number: "21G",
-    stops: ["Central Station", "Park", "Marina Beach"],
-    fare: "₹15",
-    timing: "Every 10 mins",
-    next: "5 mins",
-    map: "https://www.google.com/maps/dir/?api=1&origin=Central+Station&destination=Marina+Beach&travelmode=transit"
-  },
-  {
-    number: "47A",
-    stops: ["T Nagar", "Museum", "Marina Beach"],
-    fare: "₹20",
-    timing: "Every 15 mins",
-    next: "8 mins",
-    map: "https://www.google.com/maps/dir/?api=1&origin=T+Nagar&destination=Marina+Beach&travelmode=transit"
-  },
-  {
-    number: "5E",
-    stops: ["Tambaram", "Guindy", "T Nagar"],
-    fare: "₹18",
-    timing: "Every 20 mins",
-    next: "12 mins",
-    map: "https://www.google.com/maps/dir/?api=1&origin=Tambaram&destination=T+Nagar&travelmode=transit"
-  }
-];
+// DATA
+const places = {
+Chennai: ["Central","Egmore","T Nagar","Guindy","Tambaram","Marina"],
+Coimbatore: ["Gandhipuram","RS Puram","Airport","Ukkadam"],
+Madurai: ["Periyar","Mattuthavani","Anna Nagar"],
+Trichy: ["Chatram","Srirangam","Airport"],
+Villupuram: ["Bus Stand","Tindivanam","Panruti"]
+};
 
-// SEARCH
-function searchBus() {
-  const input = document.getElementById("search").value.toLowerCase().trim();
-  const loader = document.getElementById("loader");
-  const resultDiv = document.getElementById("result");
+const districts = ["All", ...Object.keys(places)];
+let selectedDistrict = "All";
+let buses = [];
 
-  loader.classList.remove("hidden");
-  resultDiv.innerHTML = "";
-
-  setTimeout(() => {
-    try {
-      let result = "";
-      let count = 0;
-
-      buses.forEach(bus => {
-        if (
-          input === "" ||
-          bus.number.toLowerCase().includes(input) ||
-          bus.stops.join(" ").toLowerCase().includes(input)
-        ) {
-          result += createCard(bus);
-          count++;
-        }
-      });
-
-resultDiv.innerHTML =
-  (count ? "<h3 style='opacity:0.8'>" + count + " buses found</h3>" : "") +
-  (result || "<p style='opacity:0.7'>🚫 No buses found<br>Try searching another location</p>");
-    } catch (err) {
-      console.error(err);
-      resultDiv.innerHTML = "<p>⚠️ Error loading buses</p>";
-    } finally {
-      loader.classList.add("hidden");
-    }
-  }, 400);
+// GENERATE BUSES
+function getRoute(list){
+  return list.sort(()=>0.5-Math.random()).slice(0,4);
 }
 
-// SHOW ALL CARD
+Object.keys(places).forEach(d=>{
+  for(let i=1;i<=20;i++){
+    let route = getRoute([...places[d]]);
+    buses.push({
+      number: d[0]+i,
+      district:d,
+      stops:route,
+      fare:"₹"+(10+Math.random()*20|0),
+      next:(Math.random()*10|0)+" mins",
+      map:`https://www.google.com/maps/dir/?api=1&origin=${route[0]}&destination=${route.at(-1)}`
+    });
+  }
+});
 
-function showAll() {
-  document.getElementById("search").value = "";
+// DISTRICT BUTTONS
+const bar=document.getElementById("districtBar");
+districts.forEach(d=>{
+  let b=document.createElement("button");
+  b.innerText=d;
+  b.className="filter-btn";
+  if(d==="All") b.classList.add("active");
+
+  b.onclick=()=>{
+    selectedDistrict=d;
+    document.querySelectorAll(".filter-btn").forEach(x=>x.classList.remove("active"));
+    document.getElementById("favTabBtn").classList.remove("active");
+    b.classList.add("active");
+    searchBus();
+  };
+
+  bar.appendChild(b);
+});
+
+// SEARCH
+function searchBus(){
+  const input=document.getElementById("search").value.toLowerCase();
+  const loader=document.getElementById("loader");
+  const resultDiv=document.getElementById("result");
+
+  loader.classList.remove("hidden");
+  resultDiv.innerHTML="";
+
+  setTimeout(()=>{
+    let result="";
+    let count=0;
+
+    buses.forEach(bus=>{
+      let matchSearch = input==="" || bus.number.toLowerCase().includes(input) || bus.stops.join(" ").toLowerCase().includes(input);
+      let matchDistrict = input!=="" || selectedDistrict==="All" ? true : bus.district===selectedDistrict;
+
+      if(matchSearch && matchDistrict){
+        result+=createCard(bus);
+        count++;
+      }
+    });
+
+    resultDiv.innerHTML =
+      (count?`<h3>${count} buses found</h3>`:"") +
+      (result || "🚫 No buses found");
+
+    speak(count? count+" buses found":"No buses found");
+
+    loader.classList.add("hidden");
+
+    document.getElementById("favSection").style.display="block";
+  },300);
+}
+
+// SHOW ALL
+function showAll(){
+  document.getElementById("search").value="";
+  selectedDistrict="All";
+  document.getElementById("favSection").style.display="block";
   searchBus();
 }
 
+// FAVORITES TAB
+function showFavoritesTab(){
+  let favs=JSON.parse(localStorage.getItem("favs"))||[];
+  let result="";
+  let count=0;
+
+  favs.forEach(num=>{
+    let bus=buses.find(b=>b.number===num);
+    if(bus){result+=createCard(bus);count++;}
+  });
+
+  document.getElementById("result").innerHTML =
+    (count?`<h3>${count} favorite buses</h3>`:"") +
+    (result || "⭐ No favorites yet");
+
+  document.getElementById("favSection").style.display="none";
+
+  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("favTabBtn").classList.add("active");
+}
+
 // CARD
-function createCard(bus) {
+function createCard(bus){
   return `
-  <div class="card">
-    <h2>🚌 ${bus.number}</h2>
+  <div class="card" onclick="openMap('${bus.map}')">
+    <h2>${bus.number}</h2>
     <p>${bus.stops.join(" → ")}</p>
-
-    <div class="badge">💸 ${bus.fare}</div>
-    <div class="badge">⏰ ${bus.next}</div>
-    <div class="badge">📅 ${bus.timing}</div>
-
+    <div class="badge">${bus.district}</div>
+    <div class="badge">${bus.fare}</div>
+    <div class="badge">${bus.next}</div>
     <br>
-    <button onclick="openMap('${bus.map}')">🗺️ Map</button>
-    <button onclick="toggleFav('${bus.number}')">
-      ${isFav(bus.number) ? "⭐ Saved" : "☆ Save"}
+    <button onclick="event.stopPropagation();toggleFav('${bus.number}')">
+      ${isFav(bus.number)?"⭐ Saved":"☆ Save"}
     </button>
   </div>`;
 }
 
-// FAVORITES
-function toggleFav(num) {
-  let favs = JSON.parse(localStorage.getItem("favs")) || [];
-
-  if (favs.includes(num)) {
-    favs = favs.filter(f => f !== num);
-  } else {
-    favs.push(num);
-  }
-
-  localStorage.setItem("favs", JSON.stringify(favs));
+// FAVORITES LOGIC
+function toggleFav(num){
+  let favs=JSON.parse(localStorage.getItem("favs"))||[];
+  favs.includes(num)?favs=favs.filter(f=>f!==num):favs.push(num);
+  localStorage.setItem("favs",JSON.stringify(favs));
   renderFavs();
-  searchBus();
 }
 
-function isFav(num) {
-  let favs = JSON.parse(localStorage.getItem("favs")) || [];
-  return favs.includes(num);
+function isFav(num){
+  return (JSON.parse(localStorage.getItem("favs"))||[]).includes(num);
 }
 
-function renderFavs() {
-  let favs = JSON.parse(localStorage.getItem("favs")) || [];
-  let html = "";
-
-  favs.forEach(num => {
-    let bus = buses.find(b => b.number === num);
-    if (bus) html += createCard(bus);
-  });
-
+function renderFavs(){
+  let favs=JSON.parse(localStorage.getItem("favs"))||[];
   document.getElementById("favorites").innerHTML =
-    html || "<p>No favorites yet ⭐</p>";
+    favs.map(n=>{
+      let b=buses.find(x=>x.number===n);
+      return b?createCard(b):"";
+    }).join("") || "No favorites yet";
 }
 
 // MAP
-function openMap(link) {
-  window.open(link, "_blank");
-}
-
-// ENTER
-function handleKey(e) {
-  if (e.key === "Enter") searchBus();
-}
+function openMap(link){window.open(link,"_blank");}
 
 // VOICE
-function startVoice() {
-  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  rec.lang = "en-IN";
+function startVoice(){
+  let rec=new (window.SpeechRecognition||window.webkitSpeechRecognition)();
+  rec.lang="en-IN";
 
-  rec.onresult = function(e) {
-    document.getElementById("search").value = e.results[0][0].transcript;
+  rec.onstart=()=>{
+    let i=document.getElementById("search");
+    i.placeholder="🎤 Listening...";
+    i.classList.add("listening");
+  };
+
+  rec.onresult=e=>{
+    let text=e.results[0][0].transcript;
+    document.getElementById("search").value=text;
+    speak("Searching for "+text);
     searchBus();
+  };
+
+  rec.onend=()=>{
+    let i=document.getElementById("search");
+    i.placeholder="Search bus...";
+    i.classList.remove("listening");
   };
 
   rec.start();
 }
 
+// SPEAK
+function speak(t){
+  let s=new SpeechSynthesisUtterance(t);
+  speechSynthesis.cancel();
+  speechSynthesis.speak(s);
+}
+
 // LOAD
-window.onload = function() {
-  renderFavs();
-};
+window.onload=renderFavs;
+
+const suggestionBox = document.getElementById("suggestions");
+
+document.getElementById("search").addEventListener("input", function () {
+  const input = this.value.toLowerCase().trim();
+
+  suggestionBox.innerHTML = "";
+
+  if (input === "") return;
+
+  let suggestions = new Set();
+
+  buses.forEach(bus => {
+    // match bus number
+    if (bus.number.toLowerCase().includes(input)) {
+      suggestions.add("🚌 " + bus.number);
+    }
+
+    // match stops
+    bus.stops.forEach(stop => {
+      if (stop.toLowerCase().includes(input)) {
+        suggestions.add("📍 " + stop);
+      }
+    });
+  });
+
+  let count = 0;
+
+  suggestions.forEach(item => {
+    if (count >= 6) return; // limit results
+
+    let div = document.createElement("div");
+    div.className = "suggestion-item";
+    div.innerText = item;
+
+    div.onclick = () => {
+      let cleanText = item.replace("🚌 ", "").replace("📍 ", "");
+      document.getElementById("search").value = cleanText;
+      suggestionBox.innerHTML = "";
+      searchBus();
+    };
+
+    suggestionBox.appendChild(div);
+    count++;
+  });
+});
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#search")) {
+    suggestionBox.innerHTML = "";
+  }
+});
+
+let currentIndex = -1;
+
+document.getElementById("search").addEventListener("keydown", (e) => {
+  const items = document.querySelectorAll(".suggestion-item");
+
+  if (e.key === "ArrowDown") {
+    currentIndex++;
+    if (currentIndex >= items.length) currentIndex = 0;
+  }
+
+  if (e.key === "ArrowUp") {
+    currentIndex--;
+    if (currentIndex < 0) currentIndex = items.length - 1;
+  }
+
+  if (e.key === "Enter" && currentIndex >= 0) {
+    items[currentIndex].click();
+  }
+
+  items.forEach((item, i) => {
+    item.style.background = i === currentIndex
+      ? "rgba(0,198,255,0.5)"
+      : "transparent";
+  });
+});
+
 
 </script>
-
 </body>
 </html>
